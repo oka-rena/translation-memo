@@ -4,14 +4,15 @@ from app.services.storage_service import get_memo
 def lambda_handler(event, context):
     # if(idクエリパラムありかなしか)
     # あり：bodyをdumpsで直接返す　なし：memo_idのリストを返す
-    query_id = event.get('id')
+    query_id = event.get('id', None)
     if query_id:
         data = get_memo(query_id)
         if not data:
             return {
                 "statusCode": 400,
                 "body": json.dumps({
-                    "message": "データが取得できませんでした"
+                    "message": "データが取得できませんでした",
+                    "data": None
                 }, ensure_ascii=False)
             }
         
@@ -29,14 +30,16 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 200,
                 "body": json.dumps({
-                    "message": "データが空です"
+                    "message": "データが空です",
+                    "data": []
                 }, ensure_ascii=False)
             }
         if data is None:
             return {
                 "statusCode": 400,
                 "body": json.dumps({
-                    "message": "データが取得できませんでした"
+                    "message": "データが取得できませんでした",
+                    "data": None
                 }, ensure_ascii=False)
             }
         
