@@ -4,7 +4,7 @@ from app.services.translation_service import GoogleTranslator
 
 def lambda_handler(event, context):
     try:
-        body = json.loads(event.get("body", {}))
+        body = event['body']
         text_origin = body.get('text')
         trans_lang_name = body.get('trans_lang')
 

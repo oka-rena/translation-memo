@@ -9,10 +9,10 @@ def test_handler_success(mocker):
     mocker.patch("app.handlers.create_memo.save_memo", return_value="test-memo-id")
 
     event = {
-        "body": json.dumps({
+        "body": {
             "text": "こんにちは",
             "trans_lang": "英語",
-        })
+        }
     }
 
     response = lambda_handler(event, None)
@@ -29,10 +29,10 @@ def test_handler_success(mocker):
 # テキストが空の場合
 def test_handler_missing_text():
     event = {
-        "body": json.dumps({
+        "body": {
             "text": "",
             "trans_lang": "英語",
-        })
+        }
     }
 
     event_body = json.loads(event["body"])
@@ -48,10 +48,10 @@ def test_handler_missing_text():
 # 言語が指定されていない場合
 def test_handler_missing_translang():
     event = {
-        "body": json.dumps({
+        "body": {
             "text": "こんにちは",
             "trans_lang": "",
-        })
+        }
     }
 
     event_body = json.loads(event["body"])
@@ -69,10 +69,10 @@ def test_handler_internal_error(mocker):
     mocker.patch("app.services.translation_service.GoogleTranslator.convert", side_effect=Exception("boom"))
 
     event = {
-        "body": json.dumps({
+        "body": {
             "text": "こんにちは",
             "trans_lang": "英語",
-        })
+        }
     }
     response = lambda_handler(event, None)
     body = json.loads(response["body"])
