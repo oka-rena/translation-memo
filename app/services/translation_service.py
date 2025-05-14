@@ -20,11 +20,11 @@ class GoogleTranslator():
     def get_language_id(self, language_name):
         return self.languages.get(language_name, None)
 
-    def convert(self, text_origin, get_language_id, trans_lang_name):
+    def convert(self, text_origin, get_language_name, trans_lang_name):
         if not text_origin:
             return None
 
-        language_origin_id = self.get_language_id(get_language_id)
+        language_origin_id = self.get_language_id(get_language_name)
         language_translationed_id = self.get_language_id(trans_lang_name)
         if language_origin_id is None:
             return None

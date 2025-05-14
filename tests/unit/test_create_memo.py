@@ -11,6 +11,7 @@ def test_handler_success(mocker):
     event = {
         "body": {
             "text": "こんにちは",
+            "origin_lang": "日本語",
             "trans_lang": "英語",
         }
     }
@@ -31,11 +32,12 @@ def test_handler_missing_text():
     event = {
         "body": {
             "text": "",
+            "origin_lang": "日本語",
             "trans_lang": "英語",
         }
     }
 
-    event_body = json.loads(event["body"])
+    event_body = event["body"]
     text_origin = event_body["text"] 
 
     response = lambda_handler(event, None)
@@ -45,16 +47,39 @@ def test_handler_missing_text():
     assert body["message"] == f"入力テキスト:「{text_origin}」の取得に失敗しました。空文字などは登録できません。"
     print(f"statusCode:{response["statusCode"]}", json.dumps(body, indent=4, ensure_ascii=False))
 
-# 言語が指定されていない場合
+
+# 変換元の言語が指定されていない場合
+def test_handler_missing_originlang():
+    event = {
+        "body": {
+            "text": "こんにちは",
+            "origin_lang": "",
+            "trans_lang": "英語",
+        }
+    }
+
+    event_body = event["body"]
+    origin_lang_name = event_body["origin_lang"]
+
+    response = lambda_handler(event, None)
+    body = json.loads(response["body"])
+
+    assert response["statusCode"] == 400
+    assert body["message"] == f"変換元の言語:「{origin_lang_name}」の取得に失敗しました。文字列で指定してください。"
+    print(f"statusCode:{response["statusCode"]}", json.dumps(body, indent=4, ensure_ascii=False))
+
+
+# 変換先の言語が指定されていない場合
 def test_handler_missing_translang():
     event = {
         "body": {
             "text": "こんにちは",
+            "origin_lang": "日本語",
             "trans_lang": "",
         }
     }
 
-    event_body = json.loads(event["body"])
+    event_body = event["body"]
     trans_lang_name = event_body["trans_lang"]
 
     response = lambda_handler(event, None)
@@ -64,6 +89,7 @@ def test_handler_missing_translang():
     assert body["message"] == f"変換先の言語:「{trans_lang_name}」の取得に失敗しました。文字列で指定してください。"
     print(f"statusCode:{response["statusCode"]}", json.dumps(body, indent=4, ensure_ascii=False))
 
+
 # 例外を発生させる
 def test_handler_internal_error(mocker):
     mocker.patch("app.services.translation_service.GoogleTranslator.convert", side_effect=Exception("boom"))
@@ -71,6 +97,7 @@ def test_handler_internal_error(mocker):
     event = {
         "body": {
             "text": "こんにちは",
+            "origin_lang": "日本語",
             "trans_lang": "英語",
         }
     }
