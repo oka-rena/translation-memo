@@ -28,3 +28,13 @@ def test_delete_not_id(mocker):
 
     response = lambda_handler(event, None)
     assert response == json.loads(dummy_response)
+
+
+def test_delete_exception(mocker):
+    mocker.patch('app.handlers.delete_memo.delete_memo', side_effect=Exception('boom'))
+
+    event = {'id': 'test_id'}
+
+    response = lambda_handler(event, None)
+    assert response.get('statusCode') == 500
+    assert "error! サーバーエラーが発生しました。" in response.get('message')
