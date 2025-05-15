@@ -17,7 +17,7 @@ def save_memo(original: str, translated: str) -> str:
     s3.put_object(
         Bucket='translation-memo',
         Key=f'memos/{memo_id}.json',
-        Body=json.dumps(data)
+        Body=json.dumps(data, ensure_ascii=False)
     )
     return memo_id
 
