@@ -47,6 +47,42 @@ def get_memo(memo_id:str =''):
         return None 
 
 
+def update_memo(memo_id:str, original: str, translated: str):
+    s3 = boto3.client('s3')
+    bucket_name = 'translation-memo'
+    folder_prefix = 'memos'
+    file_key = f'{folder_prefix}/{memo_id}.json'
+
+    try:
+        s3.get_object(Bucket=bucket_name, Key=file_key)
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "message": f"error! データが見つかりません。 - {e}"
+        }
+
+    data = {
+        'id': memo_id,
+        'original': original,
+        'translated': translated
+    }
+    try:
+        s3.put_object(
+            Bucket='translation-memo',
+            Key=f'memos/{memo_id}.json',
+            Body=json.dumps(data, ensure_ascii=False)
+        )
+        return {
+            "statusCode": 200,
+            "message": f"id:{memo_id} のデータを書き換えました。"
+        }
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "message": f"error! データの書き換えに失敗しました。 - {e}"
+        }
+
+
 def delete_memo(memo_id:str):
     BUCKET_NAME = 'translation-memo'
     DELETE_DIR_PATH = 'memos'

@@ -3,7 +3,7 @@ import boto3
 import json
 import pytest
 from moto import mock_aws
-from app.services.storage_service import save_memo, get_memo, delete_memo
+from app.services.storage_service import save_memo, get_memo, update_memo, delete_memo
 
 @pytest.fixture
 def setup():
@@ -128,6 +128,80 @@ class TestGetMemo():
 
         memo = get_memo(non_existent_memo_id)
         assert memo is None
+
+
+class TestUpdateMemo():
+    # 正常処理
+    def test_update_success(self, setup):
+        s3, bucket_name, origin_text, translated_text  = setup
+        dummy_memo_id = 'テストテスト1111'
+        update_origin = 'データを更新します'
+        update_trans = 'this data is updated'
+
+        # ダミー情報を登録
+        body_content = {"id": dummy_memo_id, "original": origin_text, "translated": translated_text}
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=f'memos/{dummy_memo_id}.json',
+            Body=json.dumps(body_content, ensure_ascii=False)
+        )
+
+        # データを更新
+        response = update_memo(dummy_memo_id, update_origin, update_trans)
+
+        # 更新後のデータを確認
+        get_file = s3.get_object(
+            Bucket=bucket_name,
+            Key=f'memos/{dummy_memo_id}.json',
+        )
+        file_content = get_file['Body'].read().decode("utf-8")
+        file_content = json.loads(file_content)
+
+        assert response.get('statusCode') == 200
+        assert response.get('message') == f'id:{dummy_memo_id} のデータを書き換えました。'
+
+        assert file_content.get('id') == dummy_memo_id
+        assert file_content.get('original') == update_origin
+        assert file_content.get('translated') == update_trans
+
+
+    # 例外処理
+    # 登録されているデータがない場合
+    def test_update_data_not_found(self, setup):
+        s3, bucket_name, origin_text, translated_text  = setup
+        dummy_memo_id = 'テストテスト1111'
+        update_origin = 'データを更新します'
+        update_trans = 'this data is updated'
+        
+        # データを登録しない状態で更新
+        response = update_memo(dummy_memo_id, update_origin, update_trans)
+
+        assert response.get('statusCode') == 500
+        assert 'error! データが見つかりません。' in response.get('message')
+
+
+    # 更新中にサーバーエラーが発生した場合
+    def test_update_data_exception(self, setup, mocker):
+        s3, bucket_name, origin_text, translated_text  = setup
+        # ダミーデータを登録
+        dummy_memo_id = 'テストテスト1111'
+        update_origin = 'データを更新します'
+        update_trans = 'this data is updated'
+        body_content = {"id": dummy_memo_id, "original": origin_text, "translated": translated_text}
+        
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=f'memos/{dummy_memo_id}.json',
+            Body=json.dumps(body_content, ensure_ascii=False)
+        )
+
+        # サーバーエラーを起こすモック
+        mock_s3 = mocker.patch("boto3.client")
+        mock_s3.return_value.put_object.side_effect = Exception("boom")
+        response = update_memo(dummy_memo_id, update_origin, update_trans)
+
+        assert response.get('statusCode') == 500
+        assert 'error! データの書き換えに失敗しました。' in response.get('message')
 
 
 # delete_memoメソッドのテスト
