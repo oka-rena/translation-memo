@@ -3,7 +3,7 @@ import boto3
 import json
 import pytest
 from moto import mock_aws
-from app.services.storage_service import save_memo, get_memo
+from app.services.storage_service import save_memo, get_memo, delete_memo
 
 @pytest.fixture
 def setup():
@@ -48,7 +48,6 @@ class TestSaveMemo():
         content = json.load(response['Body'])
 
         assert content['id'] == memo_id
-    
 
 
 # get_memoメソッドのテスト
@@ -129,3 +128,96 @@ class TestGetMemo():
 
         memo = get_memo(non_existent_memo_id)
         assert memo is None
+
+
+# delete_memoメソッドのテスト
+class TestDeleteMemo():
+    # 正常処理
+    def test_delete_memo_success(self, setup):
+        s3, bucket_name, origin_text, translated_text  = setup
+        folder_prefix = 'memos'
+        dummy_memo_ids = ['テストテスト1111', 'テストダミー222', 'testtdata3333']
+        delete_target_id = 'テストテスト1111'
+
+        # ダミー情報を登録
+        for memo_id in dummy_memo_ids:
+            body_content = {"id": memo_id, "original": origin_text, "translated": translated_text}
+            s3.put_object(
+                Bucket=bucket_name,
+                Key=f'memos/{memo_id}.json',
+                Body=json.dumps(body_content, ensure_ascii=False)
+            )
+        
+        # 削除する
+        delete_response = delete_memo(delete_target_id)
+        result = json.loads(delete_response)
+
+        # 保存されたオブジェクトを取得して残りの検証
+        get_response = s3.list_objects_v2(
+            Bucket=bucket_name,
+            Prefix=folder_prefix
+        )
+        list_data = [obj['Key'] for obj in get_response.get('Contents')]
+
+        assert result['statusCode'] == 200
+        assert result['message'] == "データの削除が完了しました"
+        assert len(list_data) == 2
+        print(list_data)
+
+
+    # 例外処理
+    # 削除対象削除対象のidが未指定の場合
+    def test_delete_memo_not_id(self, setup):
+        s3, bucket_name, origin_text, translated_text  = setup
+        dummy_memo_ids = ['テストテスト1111', 'テストダミー222', 'testtdata3333']
+        delete_target_id = ''
+
+        # ダミー情報を登録
+        for memo_id in dummy_memo_ids:
+            body_content = {"id": memo_id, "original": origin_text, "translated": translated_text}
+            s3.put_object(
+                Bucket=bucket_name,
+                Key=f'memos/{memo_id}.json',
+                Body=json.dumps(body_content, ensure_ascii=False)
+            )
+        
+        # 削除する
+        delete_response = delete_memo(delete_target_id)
+        result = json.loads(delete_response)
+
+        assert result['statusCode'] == 400
+        assert result['message'] == "error!: データが見つかりませんでした"
+
+
+    # 指定されたidのデータが見つからなかった場合
+    def test_delete_memo_not_found(self, setup):
+        s3, bucket_name, origin_text, translated_text  = setup
+        dummy_memo_ids = ['テストテスト1111', 'テストダミー222', 'testtdata3333']
+        delete_target_id = 'エラーid-4444'
+
+        # ダミー情報を登録
+        for memo_id in dummy_memo_ids:
+            body_content = {"id": memo_id, "original": origin_text, "translated": translated_text}
+            s3.put_object(
+                Bucket=bucket_name,
+                Key=f'memos/{memo_id}.json',
+                Body=json.dumps(body_content, ensure_ascii=False)
+            )
+        
+        # 削除する
+        delete_response = delete_memo(delete_target_id)
+        result = json.loads(delete_response)
+
+        assert result['statusCode'] == 500
+        assert result['message'] == "error!: 削除対象のデータが存在しません。"
+
+
+    # Exceptionエラーが発生した場合
+    def test_delete_memo_exception(self, mocker):
+        mock_s3 = mocker.patch("boto3.client")
+        mock_s3.return_value.delete_object.side_effect = Exception("boom")
+
+        result = json.loads(delete_memo("test-id"))
+        
+        assert result["statusCode"] == 500
+        assert "error!: データを削除できませんでした" in result["message"]

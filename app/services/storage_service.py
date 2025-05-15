@@ -45,3 +45,34 @@ def get_memo(memo_id:str =''):
         return json.loads(response['Body'].read().decode('utf-8'))
     except s3.exceptions.NoSuchKey:
         return None 
+
+
+def delete_memo(memo_id:str):
+    BUCKET_NAME = 'translation-memo'
+    DELETE_DIR_PATH = 'memos'
+    FILE_NAME = f'{memo_id}.json'
+    s3 = boto3.client('s3')
+    delete_file_path = f'{DELETE_DIR_PATH}/{FILE_NAME}'
+
+    # ファイルが存在するか確認（s3はオブジェクトがなくても、削除成功をかえしてしまうため）
+    try:
+        s3.head_object(Bucket=BUCKET_NAME, Key=delete_file_path)
+    except s3.exceptions.ClientError:
+        return json.dumps({
+            "statusCode": 500,
+            "message": "error!: 削除対象のデータが存在しません。"
+        }, ensure_ascii=False)
+
+    # データの削除
+    try:
+        response = s3.delete_object(Bucket=BUCKET_NAME, Key=delete_file_path)
+        print(response)
+        return json.dumps({
+            "statusCode": 200,
+            "message": "データの削除が完了しました"
+        }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({
+            "statusCode": 500,
+            "message": f"error!: データを削除できませんでした。 - {e}"
+        }, ensure_ascii=False)
