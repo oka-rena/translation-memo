@@ -2,8 +2,6 @@
 
 **translation-memo** は、指定した言語にメモを翻訳して登録・管理できるアプリケーションです。
 
----
-
 ## 前提条件
 このアプリケーション起動には、ローカル環境に以下の環境が必要です
 - python: 3.12
@@ -62,8 +60,6 @@ pip install -r requirements.txt
 curl -X POST -H "Content-Type: application/json" -d @post.json https://c7aq155hl3.execute-api.ap-northeast-1.amazonaws.com/transmemo-stage/post
 ```
 
----
-
 ## メモの取得
 ### メモのid一覧を取得する場合
 1. 以下のコマンドを入力すると、メモの一覧が取得できます。（idはUUIDになっています）
@@ -77,8 +73,6 @@ curl -X GET https://c7aq155hl3.execute-api.ap-northeast-1.amazonaws.com/transmem
 curl -X GET https://c7aq155hl3.execute-api.ap-northeast-1.amazonaws.com/transmemo-stage?id=idを入れる
 ```
 
----
-
 ## メモの更新
 1. コードエディタで post.json を開きます。
 「text」にメモを書き、「origin_lang」にメモを書いた言語、「trans_lang」に翻訳後の言語を記入してください。
@@ -88,8 +82,6 @@ curl -X GET https://c7aq155hl3.execute-api.ap-northeast-1.amazonaws.com/transmem
 curl -X PUT -H "Content-Type: application/json" -d @post.json https://c7aq155hl3.execute-api.ap-northeast-1.amazonaws.com/transmemo-stage?id=idを入れる
 ```
 
----
-
 ## メモの削除
 1. idを指定して、メモを削除します。(id=の後ろにメモのUUIDを指定してください)
 ```bash
@@ -98,5 +90,7 @@ curl -X DELETE https://c7aq155hl3.execute-api.ap-northeast-1.amazonaws.com/trans
 
 ---
 
-# 備考
-- このアプリケーションは AWS API Gateway を利用して、バックエンドと通信しています。
+## 備考
+- このアプリケーションは、python・pytest・AWS Lambda の学習を目的として作成しました。
+- AWS API Gateway を利用して、バックエンドと通信しています。
+- app/handlers、app/service 内にあるコードを、AWS Lambdaで使用しています。
