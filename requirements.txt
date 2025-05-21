@@ -2,4 +2,4 @@ requests
 boto3
 pytest
 moto
-googletrans
+googletrans==3.1.0a0
